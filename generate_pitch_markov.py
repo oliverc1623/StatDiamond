@@ -1,10 +1,14 @@
 import argparse
-from pybaseball import statcast_pitcher
-from pybaseball import playerid_lookup
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 import pandas as pd
 pd.set_option('display.max_columns', None)
 from IPython.display import display
-import math
+
+from pybaseball import statcast_pitcher
+from pybaseball import playerid_lookup
 
 states = {
     (0,0): 0,
@@ -27,8 +31,29 @@ states = {
     "Walk": 17
 }
 
-def main(args):
+def get_pitch_sequence(df_game):
+    pitch_seq = []
+    for i, row in df_game.iterrows():
+        event = row['events']
+        if str(event) == "nan":
+            pitch_seq.append(states[row['non_terminal_states']])
+    return pitch_seq
 
+def count_transitions(pitch_seq):
+    n = 1+ max(pitch_seq) #number of states
+    M = [[0]*n for _ in range(n)]
+    for (i,j) in zip(pitch_seq,pitch_seq[1:]):
+        M[i][j] += 1
+    return np.array(M)
+
+def get_probabilities(m):
+    for row in m:
+        s = sum(row)
+        if s > 0:
+            row[:] = [f/s for f in row]
+    return m
+
+def main(args):
     # import data and select season
     df = pd.read_csv(args.pitcher_file)
     df['year'] = pd.DatetimeIndex(df['game_date']).year  # separate year from date
@@ -44,34 +69,26 @@ def main(args):
     df_simple = df_simple.iloc[::-1] # reverse order from earliest to latest
     non_terminal_states = list(zip(df_simple.balls, df_simple.strikes))
     df_simple['non_terminal_states'] = non_terminal_states
-    
-    # compute list of pitch transitions
-    transitions = []
-    for i, row in df_simple.iterrows():
-        event = row['events']
-        if str(event) == "nan":
-            transitions.append(states[row['non_terminal_states']])
+    df_simple = df_simple.reset_index()
 
-    """
-    Taken from https://stackoverflow.com/questions/46657221/generating-markov-transition-matrix-in-python
-    """
-    def transition_matrix(transitions):
-        n = 1+ max(transitions) #number of states
+    # Make a dictionary for each game
+    unique_games = df_simple.game_date.unique()
+    DataFrameDict = {elem : pd.DataFrame() for elem in unique_games}
 
-        M = [[0]*n for _ in range(n)]
+    for key in DataFrameDict.keys():
+        DataFrameDict[key] = df_simple[:][df_simple.game_date == key]
 
-        for (i,j) in zip(transitions,transitions[1:]):
-            M[i][j] += 1
-
-        #now convert to probabilities:
-        for row in M:
-            s = sum(row)
-            if s > 0:
-                row[:] = [f/s for f in row]
-        return M
-
-    m = transition_matrix(transitions)
-    for row in m: print(' '.join('{0:.2f}'.format(x) for x in row))
+    all_transition_matrices = []
+    for game_date, game_df in DataFrameDict.items():
+        pitch_sequence = get_pitch_sequence(game_df)
+        m = count_transitions(pitch_sequence)
+        pad_len = 12 - len(m)
+        m = np.pad(m, (0, pad_len), mode="constant")
+        all_transition_matrices.append(m)
+    all_transition_matrices = np.array(all_transition_matrices)
+    M = sum(all_transition_matrices)
+    M = get_probabilities(M.tolist())
+    for row in M: print(' '.join('{0:.2f}'.format(x) for x in row))
 
 
 if __name__=="__main__":
