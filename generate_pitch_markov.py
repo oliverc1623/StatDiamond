@@ -88,8 +88,26 @@ def main(args):
     all_transition_matrices = np.array(all_transition_matrices)
     M = sum(all_transition_matrices)
     M = get_probabilities(M.tolist())
-    for row in M: print(' '.join('{0:.2f}'.format(x) for x in row))
+    # for row in M: print(' '.join('{0:.2f}'.format(x) for x in row))
+    M = np.triu(np.array(M))
 
+    M = pd.DataFrame(M)
+    M = M.rename(columns={0:"(0,0)",
+                    1:"(1,0)",
+                    2:"(2,0)",
+                    3:"(3,0)",
+                    4:"(0,1)",
+                    5:"(0,2)",
+                    6:"(1,1)",
+                    7:"(1,2)",
+                    8:"(2,1)",
+                    9:"(2,2)",
+                    10:"(3,1)",
+                    11:"(3,2)"})
+    h = sns.heatmap(M, xticklabels=M.columns, yticklabels=M.columns)
+    if args.save:
+        fig = h.get_figure()
+        fig.savefig(f'figures/{args.pitcher_file[5:-4]}_markov_matrix.pdf')
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(
@@ -97,4 +115,5 @@ if __name__=="__main__":
                     description='Returns pitch data for an individual pitcher as a csv')
     parser.add_argument('-f', '--pitcher_file', required=True)      # option that takes a value
     parser.add_argument('-y', '--year', required=True, type=int)
+    parser.add_argument('-s', '--save', action="store_true")
     main(parser.parse_args())
