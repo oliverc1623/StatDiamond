@@ -19,9 +19,8 @@ def plot_markov_chain(M, first_name, last_name, year):
 
 def main(args):
     pitcher_mdp = PitcherMDP(args.first_name, args.last_name, args.start_dt, args.end_dt)
-    M = pitcher_mdp.get_markov_chain(no_actions=True)
-    print(M)
-    plot_markov_chain(M, args.first_name, args.last_name, args.start_dt[:4])
+    M = pitcher_mdp.get_markov_chain(no_actions=False)
+    pitcher_mdp.value_iteration(M)
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(
