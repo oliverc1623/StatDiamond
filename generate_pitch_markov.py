@@ -1,15 +1,11 @@
 import argparse
-import math
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set(rc={'figure.figsize':(11.7,8.27)})
 import pandas as pd
 pd.set_option('display.max_columns', None)
-from IPython.display import display
 
-from pybaseball import statcast_pitcher
-from pybaseball import playerid_lookup
 
 states = {
     (0,0): 0,
