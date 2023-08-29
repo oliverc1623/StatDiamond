@@ -119,6 +119,26 @@ def get_probabilities(m):
             row[:] = [f/s for f in row]
     return m
 
+def get_markov_chain(data, simple=False):
+    pitch_seq, action_seq = get_pitch_sequence(data) # TODO: utilized action_seq
+    if simple:
+        data = {'state': pitch_seq}
+        df = pd.DataFrame(data)
+        df['next_state'] = df['state'].shift(-1)
+        df = df[:-1]
+        transition_counts = df.groupby(['state', 'next_state']).size().unstack(fill_value=0)
+        transition_probabilities = transition_counts.div(transition_counts.sum(axis=1), axis=0)
+    else: 
+        data = {'state': pitch_seq,
+                'action': action_seq}
+        df = pd.DataFrame(data)
+        df['next_state'] = df['state'].shift(-1)
+        df['next_label'] = df['action'].shift(-1)
+        df = df[:-1]
+        transition_counts = df.groupby(['state', 'next_state', 'action']).size().unstack(fill_value=0)
+        transition_probabilities = transition_counts.div(transition_counts.sum(axis=1), axis=0)
+    return transition_probabilities
+
 def main(args):
     # import data and select season
     df = pd.read_csv(args.pitcher_file)
@@ -126,47 +146,35 @@ def main(args):
     df['month'] = pd.DatetimeIndex(df['game_date']).month
     df_season = df[(df['year']==args.year) & (df['month'] >= 4)]
 
-    # select certain columns
-    df_simple = df_season.filter(items=['balls',
+    # Data Prep by selecting certain columns
+    df_season = df_season.filter(items=['balls',
                              'strikes',
                              'events',
                              'description',
                              'game_date'])
-    df_simple = df_simple.iloc[::-1] # reverse order from earliest to latest
-    non_terminal_states = list(zip(df_simple.balls, df_simple.strikes))
-    df_simple['non_terminal_states'] = non_terminal_states
-    df_simple = df_simple.reset_index()
+    df_season = df_season.iloc[::-1] # reverse order from earliest to latest
+    non_terminal_states = list(zip(df_season.balls, df_season.strikes))
+    df_season['non_terminal_states'] = non_terminal_states
+    df_season = df_season.reset_index()
 
-    pitch_seq, action_seq = get_pitch_sequence(df_simple) # TODO: utilized action_seq
-    # Sample DataFrame with a 'state' column
-    data = {'state': pitch_seq}
-    df = pd.DataFrame(data)
+    M = get_markov_chain(df_season, simple=True)
 
-    # Create a new column 'next_state' that represents the next state for each row
-    df['next_state'] = df['state'].shift(-1)
-
-    # Remove the last row since it doesn't have a next state
-    df = df[:-1]
-
-    # Calculate transition counts
-    transition_counts = df.groupby(['state', 'next_state']).size().unstack(fill_value=0)
-
-    # Calculate transition probabilities
-    transition_probabilities = transition_counts.div(transition_counts.sum(axis=1), axis=0)
-
-    mask = np.tril(np.ones_like(transition_probabilities))
-    h = sns.heatmap(transition_probabilities, 
+    mask = np.tril(np.ones_like(M))
+    h = sns.heatmap(M, 
                 cmap='viridis', 
                 cbar=False,
                 fmt='.2f',
                 mask=mask,
                 annot=True,
                 xticklabels=pitch_count_labels,
-                yticklabels=pitch_count_labels)
+                yticklabels=pitch_count_labels).set_title(f"Pitch Count Sequence Transition Probability for {args.pitcher_file[5:-4]} in {args.year}")
     plt.show()
     if args.save:
         fig = h.get_figure()
         fig.savefig(f'figures/{args.pitcher_file[5:-4]}_markov_matrix.pdf')
+        # save transition probability matrix with batter actions as csv for Value Iteration
+        M = get_markov_chain(df_season, simple=False)
+        M.to_csv(f"markov_chains/{args.pitcher_file[5:-4]}_{args.year}_MC.csv")
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(
