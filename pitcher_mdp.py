@@ -1,6 +1,7 @@
 from pybaseball import statcast_pitcher
 from pybaseball import playerid_lookup
 import pandas as pd
+import numpy as np
 
 states = {
     (0,0): 0,
@@ -22,6 +23,22 @@ states = {
     "HR": 16, 
     "Walk": 17
 }
+
+non_terminal_states = {
+    (0,0): 0,
+    (1,0): 1,
+    (2,0): 2,
+    (3,0): 3,
+    (0,1): 4,
+    (0,2): 5,
+    (1,1): 6,
+    (1,2): 7,
+    (2,1): 8,
+    (2,2): 9,
+    (3,1): 10,
+    (3,2): 11
+}
+
 pitch_count_labels = [
     "(0,0)",
     "(1,0)",
@@ -133,5 +150,64 @@ class PitcherMDP:
             df['next_label'] = df['action'].shift(-1)
             df = df[:-1]
             transition_counts = df.groupby(['state', 'next_state', 'action']).size().unstack(fill_value=0)
-            M = transition_counts.div(transition_counts.sum(axis=1), axis=0)
+            M = transition_counts.div(transition_counts.sum(axis=1), axis=0).reset_index()
         return M
+
+    def reward_fn(self, i, action, j):
+        non_terminal_states = list(non_terminal_states.values())
+        if i in non_terminal_states:
+            # if out
+            if j == 12 or j in non_terminal_states:
+                return 0
+            # if walk
+            elif j == 17 and action == "stand":
+                return 1
+            # if single
+            elif j == 13 and action == "swing":
+                return 2
+            elif j == 14 and action == "swing":
+                return 3
+            elif j == 15 and action == "swing":
+                return 4
+            elif j == 16 and action == "swing":
+                return 5
+        else:
+            return 0
+
+    def value_iteration(self, P):
+        q_table = {
+            0: 0,
+            1: 0,
+            2: 0,
+            3: 0,
+            4: 0,
+            5: 0,
+            6: 0,
+            7: 0,
+            8: 0,
+            9: 0,
+            10: 0 ,
+            11: 0 ,
+            12: 0 ,
+            13: 0 ,
+            14: 0 ,
+            15: 0 ,
+            16: 0 ,
+            17: 0 ,
+        }
+        delta = np.Inf
+        epsilon = np.finfo(float).eps
+        # while delta >= epsilon:
+        for i in range(len(non_terminal_states)+1):
+            v = q_table[i]
+            swing_value = 0
+            stand_value = 0
+            for j in range(i, len(non_terminal_states)):
+                print(f"({i}, {j})")
+                p_stand = P[(P['state']==i) & (P['next_state']==j)].stand
+                p_swing = P[(P['state']==i) & (P['next_state']==j)].swing
+                if not p_stand.empty:
+                    print(f"p_stand: {p_stand.item()}")
+
+                if not p_swing.empty:
+                    print(f"p_swing: {p_swing.item()}")
