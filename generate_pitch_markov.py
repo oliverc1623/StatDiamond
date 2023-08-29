@@ -3,6 +3,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+sns.set(rc={'figure.figsize':(11.7,8.27)})
 import pandas as pd
 pd.set_option('display.max_columns', None)
 from IPython.display import display
@@ -156,9 +157,10 @@ def main(args):
     mask = np.tril(np.ones_like(transition_probabilities))
     h = sns.heatmap(transition_probabilities, 
                 cmap='viridis', 
-                cbar=True,
+                cbar=False,
                 fmt='.2f',
                 mask=mask,
+                annot=True,
                 xticklabels=pitch_count_labels,
                 yticklabels=pitch_count_labels)
     plt.show()
