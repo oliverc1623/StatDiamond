@@ -1,5 +1,5 @@
 import argparse
-from pitcher_mdp import PitcherMDP
+from PitcherMDP import PitcherMDP
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -19,8 +19,13 @@ def plot_markov_chain(M, first_name, last_name, year):
 
 def main(args):
     pitcher_mdp = PitcherMDP(args.first_name, args.last_name, args.start_dt, args.end_dt)
-    M = pitcher_mdp.get_markov_chain(no_actions=False)
-    pitcher_mdp.value_iteration(M)
+    M = pitcher_mdp.get_markov_chain()
+    print(M.shape)
+    for row in M[:,:,0]: print(' '.join('{:.2f}'.format(x) for x in row))
+    print()
+    for row in M[:,:,1]: print(' '.join('{:.2f}'.format(x) for x in row))
+    # policy = pitcher_mdp.value_iteration(M)
+    # print(policy)
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(

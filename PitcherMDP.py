@@ -2,6 +2,7 @@ from pybaseball import statcast_pitcher
 from pybaseball import playerid_lookup
 import pandas as pd
 import numpy as np
+import math
 
 states = {
     (0,0): 0,
@@ -55,7 +56,7 @@ class PitcherMDP:
         id = playerid_lookup(lname,fname).key_mlbam.item() # TODO: handle missing player
         self.data = statcast_pitcher(start_dt, end_dt, player_id = id)
 
-    def get_markov_chain(self, no_actions=False):
+    def get_markov_chain(self):
         # Data prep
         df = self.data
         df['year'] = pd.DatetimeIndex(df['game_date']).year  # separate year from date
@@ -103,39 +104,44 @@ class PitcherMDP:
                 pitch_seq.append(states[row['non_terminal_states']])
                 pitch_seq.append(states["Walk"])
                 walk_flag = True
-            # if swing
             if (row['description'] == 'foul' or 
-                row['description'] == 'swinging_strike' or 
-                row['description'] == 'foul_tip' or
-                row['description'] == 'swinging_strike_blocked' or
-                row['description'] == 'foul_bunt' or 
-                row['description'] == 'missed_bunt' or 
-                row['description'] == 'hit_into_play'):
-                action_seq.append("swing")
-            # elif stand
+                    row['description'] == 'swinging_strike' or 
+                    row['description'] == 'foul_tip' or
+                    row['description'] == 'swinging_strike_blocked' or
+                    row['description'] == 'foul_bunt' or 
+                    row['description'] == 'missed_bunt' or 
+                    row['description'] == 'hit_into_play'):
+                action_seq.append(1)
             elif (row['description'] == 'called_strike' or 
-                row['description'] == 'ball' or 
-                row['description'] == 'blocked_ball'):
-                action_seq.append("stand")
+                    row['description'] == 'ball' or 
+                    row['description'] == 'blocked_ball'):
+                action_seq.append(0)
                 if walk_flag:
-                    action_seq.append("stand")
+                    action_seq.append(0)
                     walk_flag = False
-        if no_actions:
-            data = {'state': pitch_seq}
-            df = pd.DataFrame(data)
-            df['next_state'] = df['state'].shift(-1)
-            df = df[:-1]
-            transition_counts = df.groupby(['state', 'next_state']).size().unstack(fill_value=0)
-            M = transition_counts.div(transition_counts.sum(axis=1), axis=0)
-        else: 
-            data = {'state': pitch_seq,
-                    'action': action_seq}
-            df = pd.DataFrame(data)
-            df['next_state'] = df['state'].shift(-1)
-            df['next_label'] = df['action'].shift(-1)
-            df = df[:-1]
-            transition_counts = df.groupby(['state', 'next_state', 'action']).size().unstack(fill_value=0)
-            M = transition_counts.div(transition_counts.sum(axis=1), axis=0).reset_index()
+
+        data = {'state': pitch_seq,
+                'action': action_seq}
+        df = pd.DataFrame(data)
+        df['next_state'] = df['state'].shift(-1)
+        M = np.zeros((13, 18, 2))
+        for i, row in df.iterrows():
+            current_state = int(row['state'])
+            action = int(row['action'])
+            if math.isnan(row['next_state']) or current_state >= 12:
+                continue
+            next_state = int(row['next_state'])
+            M[current_state, next_state, action] += 1
+
+        for row in M[:,:,0]:
+            n = sum(row)
+            if n > 0:
+                row[:] = [f/sum(row) for f in row]
+
+        for row in M[:,:,1]:
+            n = sum(row)
+            if n > 0:
+                row[:] = [f/sum(row) for f in row]
         return M
 
     def reward_fn(self, i, action, j):
@@ -157,54 +163,3 @@ class PitcherMDP:
                 return 0
         else:
             return 0
-        
-    def get_policy(self, q_table):
-        pi = np.ones(12) * -1
-        for s in range(0, 12):
-            v_list = np.zeros(2)
-            for a in ['stand', 'swing']:
-                p
-
-    def value_iteration(self, P):
-        q_table = {
-            0: 0,
-            1: 0,
-            2: 0,
-            3: 0,
-            4: 0,
-            5: 0,
-            6: 0,
-            7: 0,
-            8: 0,
-            9: 0,
-            10: 0 ,
-            11: 0 ,
-            12: 0 ,
-            13: 0 ,
-            14: 0 ,
-            15: 0 ,
-            16: 0 ,
-            17: 0 ,
-        }
-        delta = np.Inf
-        epsilon = np.finfo(float).eps
-        while delta >= epsilon:
-            for i in range(0, 12): # TODO: replace range with len of var
-                v = q_table[i]
-                swing_value = 0
-                stand_value = 0
-                for j in range(i, 18): # TODO: replace range with len of var
-                    p_stand = P[(P['state']==i) & (P['next_state']==j)].stand
-                    p_swing = P[(P['state']==i) & (P['next_state']==j)].swing
-                    if not p_stand.empty:
-                        reward = self.reward_fn(i,"stand",j)
-                        stand_value += p_stand.item()*(reward + q_table[j])
-                    if not p_swing.empty:
-                        reward = self.reward_fn(i,"swing",j)
-                        swing_value += p_swing.item()*(reward + q_table[j])
-                q_table[i] = max(swing_value, stand_value)
-                delta = min(delta, np.abs(v - q_table[i]))
-        print("Converged!")
-        print(q_table)
-        policy = self.get_policy(q_table)
-        return policy
