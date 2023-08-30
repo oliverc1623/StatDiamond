@@ -54,20 +54,6 @@ class PitcherMDP:
         self.year = int(start_dt[:4])
         id = playerid_lookup(lname,fname).key_mlbam.item() # TODO: handle missing player
         self.data = statcast_pitcher(start_dt, end_dt, player_id = id)
-        self.non_terminal_states = {
-            (0,0): 0,
-            (1,0): 1,
-            (2,0): 2,
-            (3,0): 3,
-            (0,1): 4,
-            (0,2): 5,
-            (1,1): 6,
-            (1,2): 7,
-            (2,1): 8,
-            (2,2): 9,
-            (3,1): 10,
-            (3,2): 11
-        }
 
     def get_markov_chain(self, no_actions=False):
         # Data prep
@@ -153,10 +139,9 @@ class PitcherMDP:
         return M
 
     def reward_fn(self, i, action, j):
-        non_terminal_states = list(self.non_terminal_states.values())
-        if i in non_terminal_states:
+        if i in list(range(0,12)):
             # if out
-            if j == 12 or j in non_terminal_states:
+            if j == 12 or j in list(range(0,12)):
                 return 0
             # if walk
             elif j == 17 and action == "stand":
@@ -170,6 +155,8 @@ class PitcherMDP:
                 return 4
             elif j == 16 and action == "swing":
                 return 5
+            else:
+                return 0
         else:
             return 0
 
@@ -197,20 +184,25 @@ class PitcherMDP:
         delta = np.Inf
         epsilon = np.finfo(float).eps
         while delta >= epsilon:
-            for i in range(len(self.non_terminal_states)+1):
+            for i in range(0, 12):
                 v = q_table[i]
                 swing_value = 0
                 stand_value = 0
-                for j in range(i, len(self.non_terminal_states)):
+                for j in range(i, 18):
+                    print(f"(i,j): {(i,j)}")
                     p_stand = P[(P['state']==i) & (P['next_state']==j)].stand
                     p_swing = P[(P['state']==i) & (P['next_state']==j)].swing
                     if not p_stand.empty:
-                        stand_value += p_stand.item()*(self.reward_fn(i,"stand",j) + q_table[j])
+                        reward = self.reward_fn(i,"stand",j)
+                        print(f"reward when stand: {reward}")
+                        stand_value += p_stand.item()*(reward + q_table[j])
                     if not p_swing.empty:
-                        swing_value += p_swing.item()*(self.reward_fn(i,"swing",j) + q_table[j])
-                q_table[j] = max(swing_value, stand_value)
+                        reward = self.reward_fn(i,"swing",j)
+                        print(f"reward when swing: {reward}")
+                        swing_value += p_swing.item()*(reward + q_table[j])
+                q_table[i] = max(swing_value, stand_value)
                 delta = min(delta, np.abs(v - q_table[i]))
-                print(np.abs(v - q_table[i]))
+                print(f"J(i): {np.abs(v - q_table[i])}")
                 print(f"delta: {delta}")
         print("Converged!")
         print(q_table)
