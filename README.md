@@ -9,7 +9,7 @@ The math that serves as the foundation for reinforcement learning is a Markov De
 
 ### Generate Transition Probability
 
-`generate_pitch_markov.py` is a Python script that will plot the transition probabilities among 12 pitch states, 
+`pitcher_mdp.py` is a Python script that creates a MDP class. This class is equipped with various methods for MDP related matter to conduct reinforcement learning. The method `get_markov_chain()` will generate a transition probability matrix (markov chain) among 12 pitch states, 
 (0,0)
 (1,0)
 (2,0)
@@ -23,16 +23,21 @@ The math that serves as the foundation for reinforcement learning is a Markov De
 (3,1)
 (3,2)
 
-To run `generate_pitch_markov.py` specify a pitcher's csv file, year, and save boolean. 
-```
-python generate_pitch_markov.py -f data/kershaw.csv -y 2017 -s
-```
+### Value Iteration
 
-### Download pitcher data
+Once you've generated a markov chain of the pitching states, you can pass it into the `value_iteration()` function. Value iteration will find the best sequence of actions (swing or stand) to maximize the expectation at each state. 
 
-Download any MLB pitcher's data by executing the script, `pitcher_to_csv.py`. For example,
+### Usage
+
+Since `pitcher_mdp.py` is a Python class, we can instantiate it in another python file. For example, `find_batting_strategy.py` instantiates a `pitcher_mpd` object and generates a markov chain and calls the value iteration method. 
+
+If you want to visualize the markov chain (without actions) call the `plot_markov_chain()` function. 
+
+`pitcher_mdp.py` should take in most MLB pitchers. I use the [pybaseball](https://github.com/jldbc/pybaseball#pybaseball) package to acquire pitching data for an individual player. In order to correctly get data from pybaseball follow the parser arguments in the `find_batting_strategy.py` file. 
+
+For example,
 ```
-python pitcher_to_csv.py --first_name Zac --last_name Gallen --start_dt 2022-04-16 --end_dt 2022-10-04
+python find_batting_strategy.py --first_name Zac --last_name Gallen --start_dt 2022-04-16 --end_dt 2022-10-04
 ```
 
 ---
