@@ -37,7 +37,11 @@ If you want to visualize the markov chain (without actions) call the `plot_marko
 
 For example,
 ```
-python find_batting_strategy.py --first_name Zac --last_name Gallen --start_dt 2022-04-16 --end_dt 2022-10-04
+python find_batting_strategy.py \
+--first_name Zac \
+--last_name Gallen \
+--start_dt 2022-04-16 \
+--end_dt 2022-10-04
 ```
 
 ---
