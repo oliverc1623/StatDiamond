@@ -114,7 +114,9 @@ class PitcherMDP:
                 action_seq.append(1)
             elif (row['description'] == 'called_strike' or 
                     row['description'] == 'ball' or 
-                    row['description'] == 'blocked_ball'):
+                    row['description'] == 'blocked_ball' or
+                    row['description'] == 'hit_by_pitch' or
+                    row['description'] == 'pitchout'):
                 action_seq.append(0)
                 if walk_flag:
                     action_seq.append(0)
@@ -122,10 +124,13 @@ class PitcherMDP:
 
         data = {'state': pitch_seq,
                 'action': action_seq}
-        df = pd.DataFrame(data)
+        df = pd.DataFrame.from_dict(data, orient='index')
+        df = df.transpose()
         df['next_state'] = df['state'].shift(-1)
         M = np.zeros((12, 18, 2))
         for i, row in df.iterrows():
+            if math.isnan(row['state']):
+                continue
             current_state = int(row['state'])
             action = int(row['action'])
             if math.isnan(row['next_state']) or current_state >= 12:
