@@ -3,6 +3,7 @@ from PitcherMDP import PitcherMDP
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+from ValueIteration import ValueIteration
 
 def plot_markov_chain(M, first_name, last_name, year):
     pitch_count_labels = ["(0,0)","(1,0)","(2,0)","(3,0)","(0,1)","(0,2)","(1,1)","(1,2)","(2,1)","(2,2)","(3,1)","(3,2)","Out", "Single","Double","Triple","HR","Walk"]
@@ -20,12 +21,7 @@ def plot_markov_chain(M, first_name, last_name, year):
 def main(args):
     pitcher_mdp = PitcherMDP(args.first_name, args.last_name, args.start_dt, args.end_dt)
     M = pitcher_mdp.get_markov_chain()
-    print(M.shape)
-    for row in M[:,:,0]: print(' '.join('{:.2f}'.format(x) for x in row))
-    print()
-    for row in M[:,:,1]: print(' '.join('{:.2f}'.format(x) for x in row))
-    # policy = pitcher_mdp.value_iteration(M)
-    # print(policy)
+    value_iterator = ValueIteration(pitcher_mdp.reward_fn, M, gamma=0.95)
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(

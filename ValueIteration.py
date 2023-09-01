@@ -2,7 +2,13 @@ import numpy as np
 
 class ValueIteration:
     def __init__(self, reward_function, transition_model, gamma) -> None:
-        pass
+        self.num_states = transition_model.shape[0]
+        self.num_actions = transition_model.shape[1]
+        self.reward_function = np.nan_to_num(reward_function)
+        self.transition_model = transition_model
+        self.gamma = gamma
+        self.values = np.zeros(self.num_states)
+        self.policy = None
 
     def get_policy(self, q_table):
         pi = np.ones(12) * -1
@@ -12,26 +18,7 @@ class ValueIteration:
                 pass
 
     def value_iteration(self, P):
-        q_table = {
-            0: 0,
-            1: 0,
-            2: 0,
-            3: 0,
-            4: 0,
-            5: 0,
-            6: 0,
-            7: 0,
-            8: 0,
-            9: 0,
-            10: 0 ,
-            11: 0 ,
-            12: 0 ,
-            13: 0 ,
-            14: 0 ,
-            15: 0 ,
-            16: 0 ,
-            17: 0 ,
-        }
+        q_table = np.zeros((18))
         delta = np.Inf
         epsilon = np.finfo(float).eps
         while delta >= epsilon:
