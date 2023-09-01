@@ -21,7 +21,11 @@ def plot_markov_chain(M, first_name, last_name, year):
 def main(args):
     pitcher_mdp = PitcherMDP(args.first_name, args.last_name, args.start_dt, args.end_dt)
     M = pitcher_mdp.get_markov_chain()
-    value_iterator = ValueIteration(pitcher_mdp.reward_fn, M, gamma=0.95)
+    print(M.shape)
+    solver = ValueIteration(pitcher_mdp.reward_fn, M, gamma=0.95)
+    policy = solver.train()
+    print(policy)
+    
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(

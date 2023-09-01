@@ -10,12 +10,23 @@ class ValueIteration:
         self.values = np.zeros(self.transition_model.shape[1])
         self.policy = None
 
-    def get_policy(self, q_table):
-        pi = np.ones(12) * -1
-        for s in range(0, 12):
-            v_list = np.zeros(2)
-            for a in ['stand', 'swing']:
-                pass
+    def get_policy(self):
+        pi = np.ones(13) * -1
+        for s in range(self.num_states):
+            v_list = np.zeros(self.num_actions)
+            for a in range(self.num_actions):
+                new_value = 0
+                for j in range(s,self.transition_model.shape[1]):
+                    p = self.transition_model[s,j,a]
+                    new_value += p * (self.reward_function(s,a,j) + self.values[j])
+                v_list[a] = new_value
+            max_index = []
+            max_val = np.max(v_list)
+            for a in range(self.num_actions):
+                if v_list[a] == max_val:
+                    max_index.append(a)
+            pi[s] = np.random.choice(max_index)
+        return pi.astype(int)
 
     def one_iteration(self):
         delta = 0
@@ -42,5 +53,5 @@ class ValueIteration:
             delta = self.one_iteration()
         print(f"Converged in {epoch} epochs!")
         print(self.values)
-        # policy = self.get_policy(q_table)
-        return None
+        policy = self.get_policy()
+        return policy
