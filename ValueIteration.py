@@ -11,7 +11,7 @@ class ValueIteration:
         self.policy = None
 
     def get_policy(self):
-        pi = np.ones(13) * -1
+        pi = np.ones(12) * -1
         for s in range(self.num_states):
             v_list = np.zeros(self.num_actions)
             for a in range(self.num_actions):

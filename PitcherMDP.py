@@ -124,7 +124,7 @@ class PitcherMDP:
                 'action': action_seq}
         df = pd.DataFrame(data)
         df['next_state'] = df['state'].shift(-1)
-        M = np.zeros((13, 18, 2))
+        M = np.zeros((12, 18, 2))
         for i, row in df.iterrows():
             current_state = int(row['state'])
             action = int(row['action'])
