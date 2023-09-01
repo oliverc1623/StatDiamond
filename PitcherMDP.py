@@ -149,15 +149,15 @@ class PitcherMDP:
             # if out
             if j == 12 or j in list(range(0,12)):
                 return 0
-            elif j == 17 and action == "stand": # if walk
+            elif j == 17 and action == 0: # walk
                 return 1
-            elif j == 13 and action == "swing": # if single
+            elif j == 13 and action == 1: # single
                 return 2
-            elif j == 14 and action == "swing": # if double
+            elif j == 14 and action == 1: # double
                 return 3
-            elif j == 15 and action == "swing": # if triple
+            elif j == 15 and action == 1: # triple
                 return 4
-            elif j == 16 and action == "swing": # if HR
+            elif j == 16 and action == 1: # HR
                 return 5
             else:
                 return 0
